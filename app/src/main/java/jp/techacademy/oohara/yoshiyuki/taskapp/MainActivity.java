@@ -6,15 +6,22 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.os.Bundle;
 import android.support.design.widget.FloatingActionButton;
-import android.support.design.widget.Snackbar;
+import android.support.v4.view.MenuItemCompat;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
+import android.support.v7.widget.SearchView;
+import android.util.Log;
+import android.view.Menu;
+import android.view.MenuInflater;
+import android.view.MenuItem;
 import android.view.View;
 import android.widget.AdapterView;
+import android.widget.LinearLayout;
 import android.widget.ListView;
 
 import java.util.Date;
 
+import io.realm.Case;
 import io.realm.Realm;
 import io.realm.RealmChangeListener;
 import io.realm.RealmResults;
@@ -32,6 +39,8 @@ public class MainActivity extends AppCompatActivity {
     };
     private ListView mListView;
     private TaskAdapter mTaskAdapter;
+
+    private SearchView mSearchView;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -120,7 +129,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void reloadListView() {
-        /// Realmデータベースから、「全てのデータを取得して新しい日時順に並べた結果」を取得
+        // Realmデータベースから、「全てのデータを取得して新しい日時順に並べた結果」を取得
         RealmResults<Task> taskRealmResults = mRealm.where(Task.class).findAll().sort("date", Sort.DESCENDING);
         // 上記の結果を、TaskList としてセットする
         mTaskAdapter.setTaskList(mRealm.copyFromRealm(taskRealmResults));
@@ -128,6 +137,53 @@ public class MainActivity extends AppCompatActivity {
         mListView.setAdapter(mTaskAdapter);
         // 表示を更新するために、アダプターにデータが変更されたことを知らせる
         mTaskAdapter.notifyDataSetChanged();
+    }
+
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        // メニューを設定
+        getMenuInflater().inflate(R.menu.menu_main, menu);
+
+        MenuItem mSearch = menu.findItem(R.id.searchView);
+
+        mSearchView = (SearchView) mSearch.getActionView();
+
+        // SearchViewの初期表示状態を設定
+        mSearchView.setIconifiedByDefault(true);
+
+        // SearchViewのSubmitボタンを使用不可にする
+        mSearchView.setSubmitButtonEnabled(false);
+
+        // SearchViewに何も入力していない時のテキストを設定
+        mSearchView.setQueryHint("カテゴリ検索");
+
+        mSearchView.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
+            // 検索ボタンを押下すると呼び出される
+            @Override
+            public boolean onQueryTextSubmit(String query) {
+                return true;
+            }
+
+            // テキスト内容が変更されるたびに呼び出される
+            @Override
+            public boolean onQueryTextChange(String newText) {
+                if (!(newText.equals(""))) {
+                    // Realmデータベースから、「newTextと一致するカテゴリ」を取得
+                    RealmResults<Task> results = mRealm.where(Task.class).like("category", newText + "*", Case.INSENSITIVE).findAll();
+                    // 上記の結果を、TaskList としてセットする
+                    mTaskAdapter.setTaskList(mRealm.copyFromRealm(results));
+                    // TaskのListView用のアダプタに渡す
+                    mListView.setAdapter(mTaskAdapter);
+                    // 表示を更新するために、アダプターにデータが変更されたことを知らせる
+                    mTaskAdapter.notifyDataSetChanged();
+                } else {
+                    reloadListView();
+                }
+                return false;
+            }
+        });
+
+        return super.onCreateOptionsMenu(menu);
     }
 
     @Override
