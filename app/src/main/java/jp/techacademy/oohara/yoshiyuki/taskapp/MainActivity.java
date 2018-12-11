@@ -169,7 +169,7 @@ public class MainActivity extends AppCompatActivity {
             public boolean onQueryTextChange(String newText) {
                 if (!(newText.equals(""))) {
                     // Realmデータベースから、「newTextと一致するカテゴリ」を取得
-                    RealmResults<Task> results = mRealm.where(Task.class).like("category", newText + "*", Case.INSENSITIVE).findAll();
+                    RealmResults<Task> results = mRealm.where(Task.class).like("category", "*" + newText + "*", Case.INSENSITIVE).findAll();
                     // 上記の結果を、TaskList としてセットする
                     mTaskAdapter.setTaskList(mRealm.copyFromRealm(results));
                     // TaskのListView用のアダプタに渡す
